@@ -1,0 +1,762 @@
+
+import sys
+from PyQt5.QtWidgets import (QApplication, QWidget)
+from PyQt5.QtGui import (QPainter, QPen, QColor, QPixmap, QImage, QFont, QPolygon)
+from PyQt5.QtCore import Qt, QRect
+from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QMenu, QAbstractButton, QFileDialog, QMessageBox, \
+    QInputDialog, QLineEdit, QTextEdit
+import PyQt5.QtWidgets as QtWidgets
+import PyQt5.QtGui as QtGui
+import PyQt5.QtCore as QtCore
+from PyQt5 import *
+import numpy as np
+import threading
+import math
+import cv2
+import copy as cp
+import time
+
+file = ""
+
+face = ["U", "D", "L", "R", "F", "B"]
+color_name = ["Y", "W", "O", "R", "B", "G"]
+color0 = [(253, 200, 60), (246, 246, 246), (220, 90, 70), (255, 0, 0), (0, 67, 188), (0, 220, 150)]
+color = []
+for x in color0:
+    color.append((x[2], x[1], x[0]))
+
+
+class MF:
+    def __init__(self):
+        self.data = {}
+        for i, x in enumerate(face):
+            self.data[x] = np.ones([3, 3]) * i
+
+
+class Example(QWidget):
+    def __init__(self):
+        super(Example, self).__init__()
+        self.cnt = 0
+        self.initUI()
+
+    def initUI(self):
+        w, h = 800, 600
+        screen = QtWidgets.QDesktopWidget().screenGeometry()
+        self.setGeometry((screen.width() - w) // 2, (screen.height() - h) // 2, w, h)
+        self.setWindowTitle("三阶魔方")
+        self.ops = ["F", "R", "U", "B", "L", "D"]
+
+        self.textEdit = QtWidgets.QTextEdit(self)
+        self.textEdit.setGeometry(580, 50, 180, 30)
+        # self.textEdit.setStyleSheet("color:red")
+        font = QtGui.QFont()
+        font.setFamily('宋体')
+        font.setBold(True)
+        font.setPointSize(12)
+        font.setWeight(75)
+        self.textEdit.setFont(font)
+
+        btn_run = QPushButton("执行公式", self)
+        btn_run.setGeometry(580, 10, 100, 30)
+        btn_run.clicked.connect(self.connect_run)
+
+        btn_solve = QPushButton("求解魔方", self)
+        btn_solve.setGeometry(30, 20, 60, 30)
+        btn_solve.clicked.connect(self.connect_solve)
+
+        btn_F = QPushButton("F", self)
+        btn_F.setGeometry(120, 10, 40, 30)
+        btn_F.clicked.connect(self.connect_F)
+        btn_R = QPushButton("R", self)
+        btn_R.setGeometry(180, 10, 40, 30)
+        btn_R.clicked.connect(self.connect_R)
+        btn_U = QPushButton("U", self)
+        btn_U.setGeometry(240, 10, 40, 30)
+        btn_U.clicked.connect(self.connect_U)
+        btn_B = QPushButton("B", self)
+        btn_B.setGeometry(300, 10, 40, 30)
+        btn_B.clicked.connect(self.connect_B)
+        btn_L = QPushButton("L", self)
+        btn_L.setGeometry(360, 10, 40, 30)
+        btn_L.clicked.connect(self.connect_L)
+        btn_D = QPushButton("D", self)
+        btn_D.setGeometry(420, 10, 40, 30)
+        btn_D.clicked.connect(self.connect_D)
+        btn_M = QPushButton("M", self)
+        btn_M.setGeometry(480, 10, 40, 30)
+        btn_M.clicked.connect(self.connect_M)
+
+        btn_f = QPushButton("F'", self)
+        btn_f.setGeometry(120, 50, 40, 30)
+        btn_f.clicked.connect(self.connect_f)
+        btn_r = QPushButton("R'", self)
+        btn_r.setGeometry(180, 50, 40, 30)
+        btn_r.clicked.connect(self.connect_r)
+        btn_u = QPushButton("U'", self)
+        btn_u.setGeometry(240, 50, 40, 30)
+        btn_u.clicked.connect(self.connect_u)
+        btn_b = QPushButton("B'", self)
+        btn_b.setGeometry(300, 50, 40, 30)
+        btn_b.clicked.connect(self.connect_b)
+        btn_l = QPushButton("L'", self)
+        btn_l.setGeometry(360, 50, 40, 30)
+        btn_l.clicked.connect(self.connect_l)
+        btn_d = QPushButton("D'", self)
+        btn_d.setGeometry(420, 50, 40, 30)
+        btn_d.clicked.connect(self.connect_d)
+        btn_m = QPushButton("M'", self)
+        btn_m.setGeometry(480, 50, 40, 30)
+        btn_m.clicked.connect(self.connect_m)
+
+    def connect_solve(self):
+        global OPPS
+        OPPS = ""
+        solve(mf.data)
+        self.update()
+        print(OPPS)
+
+    def connect_F(self):
+        move(mf.data, "F")
+        self.update()
+
+    def connect_R(self):
+        move(mf.data, "R")
+        self.update()
+
+    def connect_U(self):
+        move(mf.data, "U")
+        self.update()
+
+    def connect_B(self):
+        move(mf.data, "B")
+        self.update()
+
+    def connect_L(self):
+        move(mf.data, "L")
+        self.update()
+
+    def connect_D(self):
+        move(mf.data, "D")
+        self.update()
+
+    def connect_M(self):
+        move(mf.data, "M")
+        self.update()
+
+    def connect_f(self):
+        move(mf.data, "f")
+        self.update()
+
+    def connect_r(self):
+        move(mf.data, "r")
+        self.update()
+
+    def connect_u(self):
+        move(mf.data, "u")
+        self.update()
+
+    def connect_b(self):
+        move(mf.data, "b")
+        self.update()
+
+    def connect_l(self):
+        move(mf.data, "l")
+        self.update()
+
+    def connect_d(self):
+        move(mf.data, "d")
+        self.update()
+
+    def connect_m(self):
+        move(mf.data, "m")
+        self.update()
+
+    def connect_run(self):
+        tmp = self.textEdit.toPlainText()
+        for op in tmp:
+            move(mf.data, op)
+            self.update()
+            # time.sleep(1)
+
+    def paintEvent(self, event):
+        painter = QPainter()
+        painter.begin(self)
+        pen = QPen(QColor(255, 0, 255), 2, Qt.SolidLine)
+        painter.setPen(pen)
+        bgi = np.zeros([900, 900, 3]) * 255
+        min_x = 200
+        max_x = 500
+        f_lu = min_x
+        f_rd = min_x + (max_x - min_x) / 3
+        x = [f_lu, f_rd, f_rd, f_lu]
+        y = [f_lu, f_lu, f_rd, f_rd]
+        for i in range(3):
+            for j in range(3):
+                arr = []
+                for k in range(4):
+                    arr.append([x[k] + (max_x - min_x + 20) * i / 3, y[k] + (max_x - min_x + 20) * j / 3])
+                arr = np.array(arr, dtype=np.int32)
+                arr = np.reshape(arr, [-1, 1, 2])
+                cv2.fillPoly(bgi, [arr], color[int(mf.data["F"][j, i])])
+        x = [260, 360, 340, 240]
+        y = [100, 100, 130, 130]
+        for i in range(3):
+            for j in range(3):
+                # arr=[[x[0]+100*i,y[0]+35*j],[x[1]+100*i,y[1]+35*j],[x[2]+100*i,y[2]+35*j],[x[3]+100*i,y[3]+35*j]]
+                arr = []
+                for k in range(4):
+                    arr.append([x[k] + 106 * i - 20 * j, y[k] + 34 * j - 5])
+                arr = np.array(arr, dtype=np.int32)
+                arr = np.reshape(arr, [-1, 1, 2])
+                cv2.fillPoly(bgi, [arr], color[int(mf.data["U"][j, i])])
+        x = [500, 514, 514, 500]
+        y = [200, 166 + 9, 266 + 9, 300]
+        for i in range(3):
+            for j in range(3):
+                # arr=[[x[0]+100*i,y[0]+35*j],[x[1]+100*i,y[1]+35*j],[x[2]+100*i,y[2]+35*j],[x[3]+100*i,y[3]+35*j]]
+                arr = []
+                for k in range(4):
+                    arr.append([x[k] + 20 * i + 18, y[k] + 110 * j - 34 * i - 6])
+                arr = np.array(arr, dtype=np.int32)
+                arr = np.reshape(arr, [-1, 1, 2])
+                cv2.fillPoly(bgi, [arr], color[int(mf.data["R"][j, i])])
+                ############L
+        cnti = 0
+        for i in range(600 - 5, 630 - 5, 10):
+            cntj = 0
+            for j in range(300, 330, 10):
+                cv2.rectangle(bgi, (i, j), (i + 8, j + 8), color[int(mf.data["L"][cntj, cnti])], thickness=-1)
+                cntj += 1
+            cnti += 1
+        ############U
+        cnti = 0
+        for i in range(630, 660, 10):
+            cntj = 0
+            for j in range(270 - 5, 300 - 5, 10):
+                cv2.rectangle(bgi, (i, j), (i + 8, j + 8), color[int(mf.data["U"][cntj, cnti])], thickness=-1)
+                cntj += 1
+            cnti += 1
+        ############F
+        cnti = 0
+        for i in range(630, 660, 10):
+            cntj = 0
+            for j in range(300, 330, 10):
+                cv2.rectangle(bgi, (i, j), (i + 8, j + 8), color[int(mf.data["F"][cntj, cnti])], thickness=-1)
+                cntj += 1
+            cnti += 1
+        ############D
+        cnti = 0
+        for i in range(630, 660, 10):
+            cntj = 0
+            for j in range(330 + 5, 360 + 5, 10):
+                cv2.rectangle(bgi, (i, j), (i + 8, j + 8), color[int(mf.data["D"][cntj, cnti])], thickness=-1)
+                cntj += 1
+            cnti += 1
+        ############R
+        cnti = 0
+        for i in range(660 + 5, 690 + 5, 10):
+            cntj = 0
+            for j in range(300, 330, 10):
+                cv2.rectangle(bgi, (i, j), (i + 8, j + 8), color[int(mf.data["R"][cntj, cnti])], thickness=-1)
+                cntj += 1
+            cnti += 1
+        ############B
+        cnti = 0
+        for i in range(690 + 10, 720 + 10, 10):
+            cntj = 0
+            for j in range(300, 330, 10):
+                cv2.rectangle(bgi, (i, j), (i + 8, j + 8), color[int(mf.data["B"][cntj, cnti])], thickness=-1)
+                # cv2.putText(bgi,str(cnti)+""+str(cntj),(i-650+cnti*40,j+60*cntj),cv2.FONT_HERSHEY_COMPLEX,1,(0,0,255),1)
+                cntj += 1
+            cnti += 1
+
+        cv2.imwrite("C:/Users/封圣007/Desktop/bgi_mf.jpg", bgi)
+        self.cnt += 1
+        # cv2.imwrite("D:/"+str(self.cnt)+".jpg",bgi)
+        if True:
+            file = r"C:/Users/封圣007/Desktop/bgi_mf.jpg"
+            pixmap = QPixmap(file)
+            temp = cv2.imread(file)
+            self.imgShape = [temp.shape[0], temp.shape[1]]
+            painter.drawPixmap(QRect(0, 0, temp.shape[0], temp.shape[1]), pixmap)
+        painter.end()
+
+    def event2point(self, event):
+        return [event.pos().x(), event.pos().y()]
+
+    def mousePressEvent(self, event):
+        self.update()
+
+    def mouseMoveEvent(self, event):
+        self.update()
+
+    def mouseReleaseEvent(self, event):
+        self.update()
+
+
+STEP = 0
+OPPS = ""
+
+
+def move(data, op):
+    global STEP, OPPS
+    STEP += 1
+    OPPS += op
+
+    def cw(data):
+        tmp = cp.deepcopy(data)
+        tmp[0, 0] = data[2, 0]
+        tmp[2, 0] = data[2, 2]
+        tmp[2, 2] = data[0, 2]
+        tmp[0, 2] = data[0, 0]
+        tmp[0, 1] = data[1, 0]
+        tmp[1, 0] = data[2, 1]
+        tmp[2, 1] = data[1, 2]
+        tmp[1, 2] = data[0, 1]
+        return tmp
+
+    def anti_cw(data):
+        tmp = cp.deepcopy(data)
+        tmp[2, 0] = data[0, 0]
+        tmp[2, 2] = data[2, 0]
+        tmp[0, 2] = data[2, 2]
+        tmp[0, 0] = data[0, 2]
+        tmp[1, 0] = data[0, 1]
+        tmp[2, 1] = data[1, 0]
+        tmp[1, 2] = data[2, 1]
+        tmp[0, 1] = data[1, 2]
+        return tmp
+
+    tmp = cp.deepcopy(data)
+    if op == "F":
+        tmp["R"][:, 0] = data["U"][2, :]
+        tmp["D"][0, :] = data["R"][::-1, 0]
+        tmp["L"][:, 2] = data["D"][0, :]
+        tmp["U"][2, :] = data["L"][::-1, 2]
+        tmp["F"][:, :] = cw(data["F"])
+    elif op == "R":
+        tmp["B"][:, 0] = data["U"][::-1, 2]
+        tmp["D"][:, 2] = data["B"][::-1, 0]
+        tmp["F"][:, 2] = data["D"][:, 2]
+        tmp["U"][:, 2] = data["F"][:, 2]
+        tmp["R"][:, :] = cw(data["R"])
+    elif op == "U":
+        tmp["F"][0, :] = data["R"][0, :]
+        tmp["L"][0, :] = data["F"][0, :]
+        tmp["B"][0, :] = data["L"][0, :]
+        tmp["R"][0, :] = data["B"][0, :]
+        tmp["U"][:, :] = cw(data["U"])
+    elif op == "B":
+        tmp["U"][0, :] = data["R"][:, 2]
+        tmp["L"][:, 0] = data["U"][0, ::-1]
+        tmp["D"][2, :] = data["L"][:, 0]
+        tmp["R"][:, 2] = data["D"][2, ::-1]
+        tmp["B"][:, :] = cw(data["B"])
+    elif op == "L":
+        tmp["U"][:, 0] = data["B"][::-1, 2]
+        tmp["F"][:, 0] = data["U"][:, 0]
+        tmp["D"][:, 0] = data["F"][:, 0]
+        tmp["B"][:, 2] = data["D"][::-1, 0]
+        tmp["L"][:, :] = cw(data["L"])
+    elif op == "D":
+        tmp["F"][2, :] = data["L"][2, :]
+        tmp["R"][2, :] = data["F"][2, :]
+        tmp["B"][2, :] = data["R"][2, :]
+        tmp["L"][2, :] = data["B"][2, :]
+        tmp["D"][:, :] = cw(data["D"])
+    elif op == "M":
+        tmp["F"][1, :] = data["L"][1, :]
+        tmp["R"][1, :] = data["F"][1, :]
+        tmp["B"][1, :] = data["R"][1, :]
+        tmp["L"][1, :] = data["B"][1, :]
+    #####################################
+    elif op == "f":
+        tmp["U"][2, :] = data["R"][:, 0]
+        tmp["R"][:, 0] = data["D"][0, ::-1]
+        tmp["D"][0, :] = data["L"][:, 2]
+        tmp["L"][:, 2] = data["U"][2, ::-1]
+        tmp["F"][:, :] = anti_cw(data["F"])
+    elif op == "r":
+        tmp["U"][:, 2] = data["B"][::-1, 0]
+        tmp["B"][:, 0] = data["D"][::-1, 2]
+        tmp["D"][:, 2] = data["F"][:, 2]
+        tmp["F"][:, 2] = data["U"][:, 2]
+        tmp["R"][:, :] = anti_cw(data["R"])
+    elif op == "u":
+        tmp["R"][0, :] = data["F"][0, :]
+        tmp["F"][0, :] = data["L"][0, :]
+        tmp["L"][0, :] = data["B"][0, :]
+        tmp["B"][0, :] = data["R"][0, :]
+        tmp["U"][:, :] = anti_cw(data["U"])
+    elif op == "b":
+        tmp["R"][:, 2] = data["U"][0, :]
+        tmp["U"][0, :] = data["L"][::-1, 0]
+        tmp["L"][:, 0] = data["D"][2, :]
+        tmp["D"][2, :] = data["R"][::-1, 2]
+        tmp["B"][:, :] = anti_cw(data["B"])
+    elif op == "l":
+        tmp["B"][:, 2] = data["U"][::-1, 0]
+        tmp["U"][:, 0] = data["F"][:, 0]
+        tmp["F"][:, 0] = data["D"][:, 0]
+        tmp["D"][:, 0] = data["B"][::-1, 2]
+        tmp["L"][:, :] = anti_cw(data["L"])
+    elif op == "d":
+        tmp["L"][2, :] = data["F"][2, :]
+        tmp["F"][2, :] = data["R"][2, :]
+        tmp["R"][2, :] = data["B"][2, :]
+        tmp["B"][2, :] = data["L"][2, :]
+        tmp["D"][:, :] = anti_cw(data["D"])
+    elif op == "m":
+        tmp["L"][1, :] = data["F"][1, :]
+        tmp["F"][1, :] = data["R"][1, :]
+        tmp["R"][1, :] = data["B"][1, :]
+        tmp["B"][1, :] = data["L"][1, :]
+    mf.data = tmp
+    return tmp
+
+
+################
+
+
+#############
+
+mf = MF()
+
+
+def moves(lst):
+    for x in lst:
+        move(mf.data, x)
+
+
+def solve(data):
+    tmp = cp.deepcopy(data)
+
+    def judge_color(i, j):
+        if mf.data["U"][i, j] == 1:
+            # print(mf.data["U"])
+            move(mf.data, "U")
+            judge_color(i, j)
+        else:
+            return None
+
+    def step1():
+        while not (mf.data["U"][0, 1] == 1 and mf.data["U"][1, 0] == 1 and mf.data["U"][2, 1] == 1 and mf.data["U"][
+            1, 2] == 1):
+            if mf.data["F"][1, 2] == 1:
+                judge_color(1, 2)
+                move(mf.data, "R")
+            elif mf.data["F"][1, 0] == 1:
+                judge_color(1, 0)
+                move(mf.data, "l")
+            elif mf.data["F"][0, 1] == 1 or mf.data["F"][2, 1] == 1:
+                judge_color(2, 1)
+                move(mf.data, "F")
+            elif mf.data["B"][1, 0] == 1:
+                judge_color(1, 2)
+                move(mf.data, "r")
+            elif mf.data["B"][1, 2] == 1:
+                judge_color(1, 0)
+                move(mf.data, "L")
+            elif mf.data["B"][0, 1] == 1 or mf.data["B"][2, 1] == 1:
+                judge_color(0, 1)
+                move(mf.data, "B")
+            elif mf.data["L"][1, 0] == 1:
+                judge_color(0, 1)
+                move(mf.data, "b")
+            elif mf.data["L"][1, 2] == 1:
+                judge_color(2, 1)
+                move(mf.data, "F")
+            elif mf.data["L"][0, 1] == 1 or mf.data["L"][2, 1] == 1:
+                judge_color(1, 0)
+                move(mf.data, "L")
+            elif mf.data["R"][1, 0] == 1:
+                judge_color(2, 1)
+                move(mf.data, "f")
+            elif mf.data["R"][1, 2] == 1:
+                judge_color(0, 1)
+                move(mf.data, "B")
+            elif mf.data["R"][0, 1] == 1 or mf.data["R"][2, 1] == 1:
+                judge_color(1, 2)
+                move(mf.data, "R")
+            elif mf.data["D"][0, 1] == 1:
+                judge_color(2, 1)
+                move(mf.data, "F")
+                move(mf.data, "F")
+            elif mf.data["D"][1, 0] == 1:
+                judge_color(1, 0)
+                move(mf.data, "L")
+                move(mf.data, "L")
+            elif mf.data["D"][1, 2] == 1:
+                judge_color(1, 2)
+                move(mf.data, "R")
+                move(mf.data, "R")
+            elif mf.data["D"][2, 1] == 1:
+                judge_color(0, 1)
+                move(mf.data, "B")
+                move(mf.data, "B")
+
+    def step2():
+        while not (mf.data["D"][0, 1] == 1 and mf.data["D"][1, 0] == 1 and mf.data["D"][2, 1] == 1 and mf.data["D"][
+            1, 2] == 1):
+            if mf.data["U"][1, 2] == 1 and mf.data["R"][0, 1] == mf.data["R"][1, 1]:
+                move(mf.data, "R")
+                move(mf.data, "R")
+            elif mf.data["U"][2, 1] == 1 and mf.data["F"][0, 1] == mf.data["F"][1, 1]:
+                move(mf.data, "F")
+                move(mf.data, "F")
+            elif mf.data["U"][1, 0] == 1 and mf.data["L"][0, 1] == mf.data["L"][1, 1]:
+                move(mf.data, "L")
+                move(mf.data, "L")
+            elif mf.data["U"][0, 1] == 1 and mf.data["B"][0, 1] == mf.data["B"][1, 1]:
+                move(mf.data, "B")
+                move(mf.data, "B")
+            else:
+                move(mf.data, "U")
+
+    def eq(lst):
+        assert len(lst) == 3
+        if lst[0] == lst[1] and lst[1] == lst[2]:
+            return True
+        return False
+
+    formula = {"left": "ulUL", "right": "URur", "yizi": "RUrurFRf", "guaijiao": "FRuruRUrf", "lfish": "luLuluuL",
+               "rfish": "RUrURUUr"}
+
+    def step3():
+        while not (eq(mf.data["D"][0, :]) and eq(mf.data["D"][:, 2]) and eq(mf.data["D"][2, :]) and eq(
+                mf.data["D"][:, 0]) and
+                   eq(mf.data["F"][2, :]) and eq(mf.data["L"][2, :]) and eq(mf.data["R"][2, :]) and eq(
+                    mf.data["B"][2, :])):
+            if mf.data["F"][0, 0] == 1:
+                color1 = mf.data["U"][2, 0]
+                color2 = mf.data["L"][0, 2]
+                if color1 == mf.data["F"][1, 1] and color2 == mf.data["L"][1, 1]:
+                    moves(formula["left"])
+                else:
+                    moves("MD")
+            elif mf.data["F"][0, 2] == 1:
+                color1 = mf.data["U"][2, 2]
+                color2 = mf.data["R"][0, 0]
+                if color1 == mf.data["F"][1, 1] and color2 == mf.data["R"][1, 1]:
+                    moves(formula["right"])
+                else:
+                    moves("MD")
+            elif mf.data["L"][0, 0] == 1 or mf.data["L"][0, 2] == 1:
+                moves("u")
+            elif mf.data["R"][0, 0] == 1 or mf.data["R"][0, 2] == 1:
+                moves("U")
+            elif mf.data["B"][0, 0] == 1 or mf.data["B"][0, 2] == 1:
+                moves("UU")
+
+            elif mf.data["F"][2, 2] == 1:
+                moves(formula["right"])
+            elif mf.data["F"][2, 0] == 1:
+                moves(formula["left"])
+            elif mf.data["L"][2, 0] == 1 or mf.data["L"][2, 2] == 1:
+                moves("MD")
+            elif mf.data["R"][2, 0] == 1 or mf.data["R"][2, 2] == 1:
+                moves("md")
+            elif mf.data["B"][2, 0] == 1 or mf.data["B"][2, 2] == 1:
+                moves("MMDD")
+
+            elif mf.data["U"][2, 0] == 1:
+                if mf.data["L"][0, 2] == mf.data["F"][1, 1] and mf.data["F"][0, 0] == mf.data["L"][1, 1]:
+                    moves(formula["left"])
+                else:
+                    moves("MD")
+            elif mf.data["U"][2, 2] == 1:
+                if mf.data["R"][0, 0] == mf.data["F"][1, 1] and mf.data["F"][0, 2] == mf.data["R"][1, 1]:
+                    moves(formula["right"])
+                else:
+                    moves("MD")
+            elif mf.data["U"][0, 0] == 1:
+                moves("u")
+            elif mf.data["U"][0, 2] == 1:
+                moves("U")
+
+            elif mf.data["D"][0, 0] == 1 and not (
+                    mf.data["F"][2, 0] == mf.data["F"][2, 1] and mf.data["L"][2, 1] == mf.data["L"][2, 2]):
+                moves(formula["left"])
+            elif mf.data["D"][0, 2] == 1 and not (
+                    mf.data["F"][2, 1] == mf.data["F"][2, 2] and mf.data["R"][2, 0] == mf.data["R"][2, 1]):
+                moves(formula["right"])
+            elif mf.data["D"][2, 0] == 1 and not (
+                    mf.data["B"][2, 1] == mf.data["B"][2, 2] and mf.data["L"][2, 0] == mf.data["L"][2, 1]):
+                moves("MMDD")
+            elif mf.data["D"][2, 2] == 1 and not (
+                    mf.data["B"][2, 0] == mf.data["B"][2, 1] and mf.data["R"][2, 1] == mf.data["R"][2, 2]):
+                moves("MMDD")
+
+    def dt(face_x_y):
+        return mf.data[face_x_y[0]][int(face_x_y[1]), int(face_x_y[2])]
+
+    def step4():
+        uMD_cnt = 0
+        while not (eq(mf.data["F"][1, :]) and eq(mf.data["L"][1, :]) and eq(mf.data["R"][1, :]) and eq(
+                mf.data["B"][1, :])):
+            if dt("F01") == dt("F11") and dt("U21") == dt("R11"):
+                moves(formula["right"] + "Umd" + formula["left"])
+            elif dt("F01") == dt("F11") and dt("U21") == dt("L11"):
+                moves(formula["left"] + "uMD" + formula["right"])
+            elif dt("F11") == dt("L01"):
+                moves("u")
+            elif dt("F11") == dt("R01"):
+                moves("U")
+            elif dt("F11") == dt("B01"):
+                moves("UU")
+            elif uMD_cnt < 5:
+                uMD_cnt += 1
+                moves("uMD")
+            else:
+                uMD_cnt = 0
+                while dt("F11") == dt("F12") and dt("F11") == dt("F10"):
+                    moves("MD")
+                if dt("F11") != dt("F12"):
+                    moves(formula["right"] + "Umd" + formula["left"])
+                elif dt("F11") != dt("F10"):
+                    moves(formula["left"] + "uMD" + formula["right"])
+
+    def step5():
+        while not (eq(mf.data["U"][1, :]) and eq(mf.data["U"][:, 1])):
+            if eq(mf.data["U"][1, :]) and dt("F01") == dt("U11"):
+                moves(formula["yizi"])
+            elif dt("U01") == dt("U11") and dt("U10") == dt("U11") and dt("F01") == dt("U11") and dt("R01") == dt(
+                    "U11"):
+                moves(formula["guaijiao"])
+            elif dt("F01") == dt("U11") and dt("R01") == dt("U11"):
+                moves(formula["yizi"])
+            else:
+                moves("U")
+
+    def step6():
+        cnt = 0
+        while not (eq(mf.data["U"][0, :]) and eq(mf.data["U"][1, :]) and eq(mf.data["U"][2, :]) and eq(
+                mf.data["U"][:, 0])):
+            lst = [dt("U00"), dt("U02"), dt("U20"), dt("U22")]
+            SUM = 0
+            for x in lst:
+                if x != dt("U11"):
+                    SUM += 1
+            if dt("U20") == dt("U11") and dt("F02") == dt("U11") and dt("R02") == dt("U11") and dt("B02") == dt("U11"):
+                moves(formula["rfish"])
+            elif dt("U22") == dt("U11") and dt("F00") == dt("U11") and dt("L00") == dt("U11") and dt("B00") == dt(
+                    "U11"):
+                moves(formula["lfish"])
+            elif SUM == 3:
+                moves("U")
+            else:
+                while dt("F00") != dt("U11"):
+                    moves("U")
+                moves(formula["rfish"])
+
+    def step7():
+        while True:
+            SUM = 0
+            for x in "FRBL":
+                if dt(x + "00") == dt(x + "02"):
+                    SUM += 1
+            if SUM >= 2:
+                break
+            if SUM == 0:
+                while dt("F00") == dt("F02") or dt("F00") == dt("L00") or dt("L00") == dt("F02"):
+                    moves("U")
+                moves(formula["guaijiao"] + formula["yizi"])
+            elif SUM == 1:
+                while dt("L00") != dt("L02"):
+                    moves("U")
+                moves(formula["yizi"] + formula["guaijiao"])
+
+    def step8():
+        while True:
+            SUM = 0
+            for x in "FRBL":
+                if eq(mf.data[x][0, :]):
+                    SUM += 1
+            if SUM == 4:
+                while dt("F00") != dt("F11"):
+                    moves("U")
+                break
+            if SUM == 0:
+                moves(formula["lfish"] + "u" + formula["rfish"])
+            elif SUM == 1:
+                while not eq(mf.data["B"][0, :]):
+                    moves("U")
+                while not eq(mf.data["B"][:, 0]):
+                    moves("MD")
+                if dt("L01") == dt("F11"):
+                    moves(formula["lfish"] + "u" + formula["rfish"])
+                elif dt("R01") == dt("F11"):
+                    moves(formula["rfish"] + "U" + formula["lfish"])
+        while dt("F11") != 4:
+            moves("uMD")
+
+    step1()
+    print(len(OPPS))
+    step2()
+    print(len(OPPS))
+    step3()
+    print(len(OPPS))
+    step4()
+    print(len(OPPS))
+    step5()
+    print(len(OPPS))
+    step6()
+    print(len(OPPS))
+    step7()
+    print(len(OPPS))
+    step8()
+    return True
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    example = Example()
+    example.show()
+    ops = ["F", "R", "U", "B", "L", "D"]
+
+    TIME = 0
+    for t in range(1):
+        OPPS = ""
+        shuffle = ""
+        seed = np.random.randint(1, 1000000)
+        np.random.seed(seed)
+        print("seed", seed)
+        for i in range(50):
+            shuffle += ops[np.random.randint(0, len(ops))]
+        moves(shuffle)
+        time1 = time.time()
+        solve(mf.data)
+        time2 = time.time()
+        TIME += (time2 - time1)
+        print("打乱公式：", shuffle)
+        print("求解公式：", OPPS[len(shuffle):])
+        print("求解步数：", len(OPPS[len(shuffle):]))
+        print(t, TIME)
+    app.exec_()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
